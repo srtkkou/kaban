@@ -152,8 +152,17 @@ func BenchmarkSyncMapStore(b *testing.B) {
 	}
 }
 
+func BenchmarkDictionaryStore(b *testing.B) {
+	d := NewDictionary()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		d.Store(key, i)
+	}
+}
+
 func BenchmarkKabanStore(b *testing.B) {
-	k := NewDictionary()
+	k := New()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		key := strconv.Itoa(i)
