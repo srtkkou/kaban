@@ -19,19 +19,23 @@ type (
 
 const (
 	chunkSize  = 1024 * 1024
+
 	intBase    = 36 // 36進数
 	intBitSize = 64 // 64ビット整数
+
+	// 日時のフォーマット
+	timeFmt = "2006-01-02T15:04:05.000000000Z7:00"
 )
 
 const (
 	sepDead   = 0xFF // Dead value
-	sepNull   = 0xFE // JSON null
-	sepString = 0xFD // JSON string
-	sepInt    = 0xFC // JSON int
-	sepUint   = 0xFB // JSON int
-	sepFloat  = 0xFA // JSON float
-	sepBool   = 0xF9 // JSON bool
-	// JSON null
+	sepEOV    = 0xFE // End of value
+	sepNull   = 0xFD // JSON null
+	sepString = 0xFC // JSON string
+	sepInt    = 0xFB // JSON int
+	sepUint   = 0xFA // JSON int
+	sepFloat  = 0xF9 // JSON float
+	sepBool   = 0xF8 // JSON bool
 	// JSON array
 	// JSON object
 	//sepAny = sepNull + sepString + sepInt + sepFloat +
@@ -55,12 +59,6 @@ func (k *Kaban) Store(key string, value interface{}) error {
 	if len(key) == 0 {
 		return fmt.Errorf("len() empty key")
 	}
-	// インデックスの格納
-	func() {
-		kabanMtx.Lock()
-		defer kabanMtx.Unlock()
-		k.keyMap[key] = len(k.chunk)
-	}()
 	// バイト列化
 	var blob []byte
 	switch v := value.(type) {
@@ -121,12 +119,22 @@ func (k *Kaban) Store(key string, value interface{}) error {
 	default:
 		return fmt.Errorf("v=%v %t\n", v, v)
 	}
-	blob = append(blob, sepDead)
+	blob = append(blob, sepEOV)
+	// 値の格納
 	func() {
 		kabanMtx.Lock()
 		defer kabanMtx.Unlock()
+		// 同キーの値は削除する。
+		index, ok := k.keyMap[key]
+		if ok {
+			k.chunk[index] = sepDead
+		}
+		// キーと値を追記する。
+		k.keyMap[key] = len(k.chunk)
 		k.chunk = append(k.chunk, blob...)
 	}()
+	//xdump(k.chunk)
+	//fmt.Println(k.keyMap)
 	return nil
 }
 
@@ -146,7 +154,7 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 	if !ok {
 		return fmt.Errorf("key %s not found", key)
 	}
-	if k.chunk[index] == sepDead {
+	if k.chunk[index] == sepEOV {
 		return fmt.Errorf("key %s not found", key)
 	}
 	// null値のチェック
@@ -155,22 +163,18 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		return nil
 	}
 	// 他の型のチェック
-	tailIndex := bytes.IndexByte(k.chunk[index:], sepDead)
-	var blob []byte
-	func() {
-		kabanMtx.RLock()
-		defer kabanMtx.RUnlock()
-		blob = k.chunk[(index + 1):tailIndex]
-	}()
-	str := string(bytes.Runes(blob))
-	switch k.chunk[index] {
+	blob := k.valueBytesAt(index)
+	switch blob[0] {
 	case sepString:
 		p, ok := ptr.(*string)
 		if !ok {
 			return fmt.Errorf("cast() *string error")
 		}
-		*p = str
+		//xdump(blob)
+		//fmt.Println("STRING")
+		*p = string(bytes.Runes(blob[1:]))
 	case sepInt:
+		str := string(blob[1:])
 		num, err := strconv.ParseInt(str, intBase, intBitSize)
 		if err != nil {
 			return fmt.Errorf("strconv.ParseInt() %s", err.Error())
@@ -190,6 +194,7 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 			return fmt.Errorf("invalid pointer type")
 		}
 	case sepUint:
+		str := string(blob[1:])
 		num, err := strconv.ParseUint(str, intBase, intBitSize)
 		if err != nil {
 			return fmt.Errorf("strconv.ParseUint() %s", err.Error())
@@ -209,7 +214,30 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 			return fmt.Errorf("invalid pointer type")
 		}
 	}
+	//xdump(k.chunk)
+	//fmt.Println(k.keyMap)
 	return nil
+}
+
+// 指定位置の値のバイト列
+func (k *Kaban) valueBytesAt(index int) []byte {
+	kabanMtx.RLock()
+	defer kabanMtx.RUnlock()
+	eovIndex := bytes.IndexByte(k.chunk[index:], sepEOV)
+	eovIndex += index
+	return k.chunk[index:eovIndex]
+}
+
+func xdump(blob []byte) {
+	for i, v := range blob {
+		if i%16 == 0 {
+			fmt.Println()
+		}
+		fmt.Printf("%02X ", v)
+	}
+	if len(blob)%16 != 0 {
+		fmt.Println()
+	}
 }
 
 // NewDictionary 辞書の新規作成
