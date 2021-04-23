@@ -12,7 +12,7 @@ import (
 
 type (
 	Kaban struct {
-		keyMap map[string]uint64
+		keyMap map[string]int
 		chunk  []byte
 	}
 )
@@ -44,7 +44,7 @@ var (
 
 func New() *Kaban {
 	k := &Kaban{
-		keyMap: make(map[string]uint64),
+		keyMap: make(map[string]int),
 		chunk:  make([]byte, 0, chunkSize),
 	}
 	return k
@@ -59,63 +59,63 @@ func (k *Kaban) Store(key string, value interface{}) error {
 	func() {
 		kabanMtx.Lock()
 		defer kabanMtx.Unlock()
-		k.keyMap[key] = uint64(len(k.chunk))
+		k.keyMap[key] = len(k.chunk)
 	}()
 	// バイト列化
 	var blob []byte
 	switch v := value.(type) {
 	case string:
-		blob = make([]byte, len(v)+1)
+		blob = make([]byte, 0, len(v)+1)
 		blob = append(blob, sepString)
 		blob = append(blob, []byte(v)...)
 	case int:
 		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepInt)
 		blob = append(blob, []byte(s)...)
 	case int8:
 		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepInt)
 		blob = append(blob, []byte(s)...)
 	case int16:
 		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepInt)
 		blob = append(blob, []byte(s)...)
 	case int32:
 		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepInt)
 		blob = append(blob, []byte(s)...)
 	case int64:
 		s := strconv.FormatInt(v, intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepInt)
 		blob = append(blob, []byte(s)...)
 	case uint:
 		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepUint)
 		blob = append(blob, []byte(s)...)
 	case uint8:
 		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepUint)
 		blob = append(blob, []byte(s)...)
 	case uint16:
 		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepUint)
 		blob = append(blob, []byte(s)...)
 	case uint32:
 		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepUint)
 		blob = append(blob, []byte(s)...)
 	case uint64:
 		s := strconv.FormatUint(v, intBase)
-		blob = make([]byte, len(s)+1)
+		blob = make([]byte, 0, len(s)+1)
 		blob = append(blob, sepUint)
 		blob = append(blob, []byte(s)...)
 	default:
@@ -136,7 +136,7 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		return fmt.Errorf("len() empty key")
 	}
 	// インデックスの取得
-	var index uint64
+	var index int
 	var ok bool
 	func() {
 		kabanMtx.RLock()
@@ -156,15 +156,20 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 	}
 	// 他の型のチェック
 	tailIndex := bytes.IndexByte(k.chunk[index:], sepDead)
-	var str string
+	var blob []byte
 	func() {
 		kabanMtx.RLock()
 		defer kabanMtx.RUnlock()
-		str = string(k.chunk[(index + 1):tailIndex])
+		blob = k.chunk[(index + 1):tailIndex]
 	}()
+	str := string(bytes.Runes(blob))
 	switch k.chunk[index] {
 	case sepString:
-		ptr = &str
+		p, ok := ptr.(*string)
+		if !ok {
+			return fmt.Errorf("cast() *string error")
+		}
+		*p = str
 	case sepInt:
 		num, err := strconv.ParseInt(str, intBase, intBitSize)
 		if err != nil {

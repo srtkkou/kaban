@@ -12,7 +12,7 @@ var (
 )
 
 func main() {
-	if err := app.AgingMain(version, os.Args); err != nil {
+	if err := app.Main(version, os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
 		os.Exit(-1)
 	}
