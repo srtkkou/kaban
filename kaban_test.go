@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"sync"
 	"testing"
-	//	"time"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -116,17 +116,15 @@ func TestStoreLoadParallel(t *testing.T) {
 		}()
 	*/
 	// Time
-	/*
-		ex5 := time.Now()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			assert.Nil(k.Store("attr5", ex5))
-			var v time.Time
-			assert.Nil(k.Load("attr5", &v))
-			assert.True(ex5.Equal(v))
-		}()
-	*/
+	ex5 := time.Now()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("attr5", ex5))
+		var v time.Time
+		assert.Nil(t, k.Load("attr5", &v))
+		assert.True(t, ex5.Equal(v))
+	}()
 	wg.Wait()
 	// Marshal/Unmarshal
 	/*

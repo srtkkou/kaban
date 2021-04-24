@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"sync"
 	//	"sync/atomic"
+	"time"
 )
 
 type (
@@ -23,9 +24,6 @@ const (
 
 	intBase    = 36 // 36進数
 	intBitSize = 64 // 64ビット整数
-
-	// 日時のフォーマット
-	timeFmt = "2006-01-02T15:04:05.000000000Z7:00"
 )
 
 const (
@@ -37,6 +35,7 @@ const (
 	sepUint   = 0xFA // JSON int
 	sepFloat  = 0xF9 // JSON float
 	sepBool   = 0xF8 // JSON bool
+	sepTime   = 0xF7 // JSON time
 	// JSON array
 	// JSON object
 	//sepAny = sepNull + sepString + sepInt + sepFloat +
@@ -73,6 +72,12 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 		blob = intToBytes(value)
 	case uint, uint8, uint16, uint32, uint64:
 		blob = uintToBytes(value)
+	case time.Time:
+		s := v.Format(time.RFC3339Nano)
+		blob = make([]byte, 0, len(s)+2)
+		blob = append(blob, sepTime)
+		blob = append(blob, []byte(s)...)
+		blob = append(blob, sepEOV)
 	default:
 		return fmt.Errorf("v=%v %t\n", v, v)
 	}
@@ -169,6 +174,16 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		default:
 			return fmt.Errorf("invalid pointer type")
 		}
+	case sepTime:
+		t, err := time.Parse(time.RFC3339Nano, string(blob[1:]))
+		if err != nil {
+			return fmt.Errorf("time.Parse() %s", err.Error())
+		}
+		p, ok := ptr.(*time.Time)
+		if !ok {
+			return fmt.Errorf("cast() *time.Time error")
+		}
+		*p = t
 	}
 	//xdump(k.chunk)
 	//fmt.Println(k.keyMap)
@@ -219,7 +234,7 @@ func intToBytes(value interface{}) []byte {
 
 func uintToBytes(value interface{}) []byte {
 	var s string
-	switch v := value.(type){
+	switch v := value.(type) {
 	case uint:
 		s = strconv.FormatUint(uint64(v), intBase)
 	case uint8:
@@ -237,7 +252,6 @@ func uintToBytes(value interface{}) []byte {
 	blob = append(blob, sepEOV)
 	return blob
 }
-
 
 // NewDictionary 辞書の新規作成
 //func NewDictionary() *Dictionary {
