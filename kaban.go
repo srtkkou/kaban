@@ -18,7 +18,8 @@ type (
 )
 
 const (
-	chunkSize  = 1024 * 1024
+	// データのバイト列の長さ
+	chunkSize = 1024 * 1024
 
 	intBase    = 36 // 36進数
 	intBitSize = 64 // 64ビット整数
@@ -46,6 +47,7 @@ var (
 	kabanMtx = new(sync.RWMutex)
 )
 
+// New Create new kaban store.
 func New() *Kaban {
 	k := &Kaban{
 		keyMap: make(map[string]int),
@@ -54,7 +56,7 @@ func New() *Kaban {
 	return k
 }
 
-func (k *Kaban) Store(key string, value interface{}) error {
+func (k *Kaban) Store(key string, value interface{}) (err error) {
 	// キー長の確認
 	if len(key) == 0 {
 		return fmt.Errorf("len() empty key")
@@ -63,63 +65,17 @@ func (k *Kaban) Store(key string, value interface{}) error {
 	var blob []byte
 	switch v := value.(type) {
 	case string:
-		blob = make([]byte, 0, len(v)+1)
+		blob = make([]byte, 0, len(v)+2)
 		blob = append(blob, sepString)
 		blob = append(blob, []byte(v)...)
-	case int:
-		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepInt)
-		blob = append(blob, []byte(s)...)
-	case int8:
-		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepInt)
-		blob = append(blob, []byte(s)...)
-	case int16:
-		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepInt)
-		blob = append(blob, []byte(s)...)
-	case int32:
-		s := strconv.FormatInt(int64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepInt)
-		blob = append(blob, []byte(s)...)
-	case int64:
-		s := strconv.FormatInt(v, intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepInt)
-		blob = append(blob, []byte(s)...)
-	case uint:
-		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepUint)
-		blob = append(blob, []byte(s)...)
-	case uint8:
-		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepUint)
-		blob = append(blob, []byte(s)...)
-	case uint16:
-		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepUint)
-		blob = append(blob, []byte(s)...)
-	case uint32:
-		s := strconv.FormatUint(uint64(v), intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepUint)
-		blob = append(blob, []byte(s)...)
-	case uint64:
-		s := strconv.FormatUint(v, intBase)
-		blob = make([]byte, 0, len(s)+1)
-		blob = append(blob, sepUint)
-		blob = append(blob, []byte(s)...)
+		blob = append(blob, sepEOV)
+	case int, int8, int16, int32, int64:
+		blob = intToBytes(value)
+	case uint, uint8, uint16, uint32, uint64:
+		blob = uintToBytes(value)
 	default:
 		return fmt.Errorf("v=%v %t\n", v, v)
 	}
-	blob = append(blob, sepEOV)
 	// 値の格納
 	func() {
 		kabanMtx.Lock()
@@ -239,6 +195,49 @@ func xdump(blob []byte) {
 		fmt.Println()
 	}
 }
+
+func intToBytes(value interface{}) []byte {
+	var s string
+	switch v := value.(type) {
+	case int:
+		s = strconv.FormatInt(int64(v), intBase)
+	case int8:
+		s = strconv.FormatInt(int64(v), intBase)
+	case int16:
+		s = strconv.FormatInt(int64(v), intBase)
+	case int32:
+		s = strconv.FormatInt(int64(v), intBase)
+	case int64:
+		s = strconv.FormatInt(v, intBase)
+	}
+	blob := make([]byte, 0, len(s)+2)
+	blob = append(blob, sepInt)
+	blob = append(blob, []byte(s)...)
+	blob = append(blob, sepEOV)
+	return blob
+}
+
+func uintToBytes(value interface{}) []byte {
+	var s string
+	switch v := value.(type){
+	case uint:
+		s = strconv.FormatUint(uint64(v), intBase)
+	case uint8:
+		s = strconv.FormatUint(uint64(v), intBase)
+	case uint16:
+		s = strconv.FormatUint(uint64(v), intBase)
+	case uint32:
+		s = strconv.FormatUint(uint64(v), intBase)
+	case uint64:
+		s = strconv.FormatUint(v, intBase)
+	}
+	blob := make([]byte, 0, len(s)+2)
+	blob = append(blob, sepUint)
+	blob = append(blob, []byte(s)...)
+	blob = append(blob, sepEOV)
+	return blob
+}
+
 
 // NewDictionary 辞書の新規作成
 //func NewDictionary() *Dictionary {

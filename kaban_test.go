@@ -15,7 +15,6 @@ type (
 )
 
 func TestStoreLoadParallel(t *testing.T) {
-	assert := assert.New(t)
 	var wg sync.WaitGroup
 	k := New()
 	// string
@@ -23,20 +22,20 @@ func TestStoreLoadParallel(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.Nil(k.Store("attr1", ex1))
+		assert.Nil(t, k.Store("attr1", ex1))
 		var v string
-		assert.Nil(k.Load("attr1", &v))
-		assert.Equal(ex1, v)
+		assert.Nil(t, k.Load("attr1", &v))
+		assert.Equal(t, ex1, v)
 	}()
 	// int
 	ex2 := 987654321
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		assert.Nil(k.Store("attr2", ex2))
+		assert.Nil(t, k.Store("attr2", ex2))
 		var v int
-		assert.Nil(k.Load("attr2", &v))
-		assert.Equal(ex2, v)
+		assert.Nil(t, k.Load("attr2", &v))
+		assert.Equal(t, ex2, v)
 	}()
 	// []string
 	/*
