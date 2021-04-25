@@ -1,7 +1,6 @@
 package kaban
 
 import (
-	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -164,36 +163,4 @@ func TestStoreLoadParallel(t *testing.T) {
 		assert.Nil(dict2.Load("attr1", &str))
 		assert.Equal(ex1, str)
 	*/
-}
-
-func BenchmarkSyncMapStoreAndLoad(b *testing.B) {
-	m := new(sync.Map)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		m.Store(key, i)
-		_, _ = m.Load(key)
-	}
-}
-
-func BenchmarkDictionaryStoreAndLoad(b *testing.B) {
-	var v int
-	d := NewDictionary()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		d.Store(key, i)
-		d.Load(key, &v)
-	}
-}
-
-func BenchmarkKabanStoreAndLoad(b *testing.B) {
-	var v int
-	k := New()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		k.Store(key, i)
-		k.Load(key, &v)
-	}
 }
