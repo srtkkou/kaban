@@ -36,7 +36,8 @@ const (
 	sepFloat  = 0xF9 // JSON float
 	sepBool   = 0xF8 // JSON bool
 	sepTime   = 0xF7 // JSON time
-	// JSON array
+	sepArray  = 0xF6 // JSON array
+	//sepObject = 0xF5 // JSON object
 	// JSON object
 	//sepAny = sepNull + sepString + sepInt + sepFloat +
 	//	sepBool
@@ -64,22 +65,16 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 	var blob []byte
 	switch v := value.(type) {
 	case string:
-		blob = make([]byte, 0, len(v)+2)
-		blob = append(blob, sepString)
-		blob = append(blob, []byte(v)...)
-		blob = append(blob, sepEOV)
+		blob = stringToChunkBytes(sepString, v)
 	case int, int8, int16, int32, int64:
 		blob = intToBytes(value)
 	case uint, uint8, uint16, uint32, uint64:
 		blob = uintToBytes(value)
 	case time.Time:
 		s := v.Format(time.RFC3339Nano)
-		blob = make([]byte, 0, len(s)+2)
-		blob = append(blob, sepTime)
-		blob = append(blob, []byte(s)...)
-		blob = append(blob, sepEOV)
+		blob = stringToChunkBytes(sepTime, s)
 	default:
-		return fmt.Errorf("v=%v %t\n", v, v)
+		return fmt.Errorf("v=%v %t", v, v)
 	}
 	// 値の格納
 	func() {
@@ -211,6 +206,14 @@ func xdump(blob []byte) {
 	}
 }
 
+func stringToChunkBytes(sep byte, s string) []byte {
+	blob := make([]byte, 0, len(s)+2)
+	blob = append(blob, sep)
+	blob = append(blob, []byte(s)...)
+	blob = append(blob, sepEOV)
+	return blob
+}
+
 func intToBytes(value interface{}) []byte {
 	var s string
 	switch v := value.(type) {
@@ -225,11 +228,7 @@ func intToBytes(value interface{}) []byte {
 	case int64:
 		s = strconv.FormatInt(v, intBase)
 	}
-	blob := make([]byte, 0, len(s)+2)
-	blob = append(blob, sepInt)
-	blob = append(blob, []byte(s)...)
-	blob = append(blob, sepEOV)
-	return blob
+	return stringToChunkBytes(sepInt, s)
 }
 
 func uintToBytes(value interface{}) []byte {
@@ -246,11 +245,7 @@ func uintToBytes(value interface{}) []byte {
 	case uint64:
 		s = strconv.FormatUint(v, intBase)
 	}
-	blob := make([]byte, 0, len(s)+2)
-	blob = append(blob, sepUint)
-	blob = append(blob, []byte(s)...)
-	blob = append(blob, sepEOV)
-	return blob
+	return stringToChunkBytes(sepUint, s)
 }
 
 // NewDictionary 辞書の新規作成
