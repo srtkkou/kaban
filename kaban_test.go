@@ -27,15 +27,25 @@ func TestStoreLoadParallel(t *testing.T) {
 		assert.Nil(t, k.Load("attr1", &v))
 		assert.Equal(t, ex1, v)
 	}()
-	// int
-	ex2 := 987654321
+	// bool
+	ex2 := true
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		assert.Nil(t, k.Store("attr2", ex2))
-		var v int
+		var v bool
 		assert.Nil(t, k.Load("attr2", &v))
 		assert.Equal(t, ex2, v)
+	}()
+	// int
+	ex3 := 987654321
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("attr3", ex3))
+		var v int
+		assert.Nil(t, k.Load("attr3", &v))
+		assert.Equal(t, ex3, v)
 	}()
 	// []string
 	/*

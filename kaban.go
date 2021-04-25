@@ -31,10 +31,10 @@ const (
 	sepEOV    = 0xFE // End of value
 	sepNull   = 0xFD // JSON null
 	sepString = 0xFC // JSON string
-	sepInt    = 0xFB // JSON int
-	sepUint   = 0xFA // JSON int
-	sepFloat  = 0xF9 // JSON float
-	sepBool   = 0xF8 // JSON bool
+	sepBool   = 0xFB // JSON bool
+	sepInt    = 0xFA // JSON int
+	sepUint   = 0xF9 // JSON int
+	sepFloat  = 0xF8 // JSON float
 	sepTime   = 0xF7 // JSON time
 	sepArray  = 0xF6 // JSON array
 	//sepObject = 0xF5 // JSON object
@@ -66,6 +66,9 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 	switch v := value.(type) {
 	case string:
 		blob = stringToChunkBytes(sepString, v)
+	case bool:
+		s := strconv.FormatBool(v)
+		blob = stringToChunkBytes(sepBool, s)
 	case int, int8, int16, int32, int64:
 		blob = intToBytes(value)
 	case uint, uint8, uint16, uint32, uint64:
@@ -129,6 +132,17 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		//xdump(blob)
 		//fmt.Println("STRING")
 		*p = string(bytes.Runes(blob[1:]))
+	case sepBool:
+		str := string(blob[1:])
+		b, err := strconv.ParseBool(str)
+		if err != nil {
+			return fmt.Errorf("strconv.ParseBool() %s", err.Error())
+		}
+		p, ok := ptr.(*bool)
+		if !ok {
+			return fmt.Errorf("cast() *bool error")
+		}
+		*p = b
 	case sepInt:
 		str := string(blob[1:])
 		num, err := strconv.ParseInt(str, intBase, intBitSize)
