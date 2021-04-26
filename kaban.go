@@ -146,43 +146,13 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		*p = b
 	case sepInt:
 		str := string(blob[1:])
-		num, err := strconv.ParseInt(str, intBase, intBitSize)
-		if err != nil {
-			return fmt.Errorf("strconv.ParseInt() %s", err.Error())
-		}
-		switch p := ptr.(type) {
-		case *int:
-			*p = (int(num))
-		case *int8:
-			*p = (int8(num))
-		case *int16:
-			*p = (int16(num))
-		case *int32:
-			*p = (int32(num))
-		case *int64:
-			*p = num
-		default:
-			return fmt.Errorf("invalid int pointer type")
+		if err := parseInt(str, ptr); err != nil {
+			return err
 		}
 	case sepUint:
 		str := string(blob[1:])
-		num, err := strconv.ParseUint(str, intBase, intBitSize)
-		if err != nil {
-			return fmt.Errorf("strconv.ParseUint() %s", err.Error())
-		}
-		switch p := ptr.(type) {
-		case *uint:
-			*p = uint(num)
-		case *uint8:
-			*p = uint8(num)
-		case *uint16:
-			*p = uint16(num)
-		case *uint32:
-			*p = uint32(num)
-		case *uint64:
-			*p = num
-		default:
-			return fmt.Errorf("invalid uint pointer type")
+		if err := parseUint(str, ptr); err != nil {
+			return err
 		}
 	case sepTime:
 		t, err := time.Parse(time.RFC3339Nano, string(blob[1:]))
@@ -262,6 +232,53 @@ func uintToBytes(value interface{}) []byte {
 	}
 	return stringToChunkBytes(sepUint, s)
 }
+
+func parseInt(s string, ptr interface{}) error {
+	n, err := strconv.ParseInt(s, intBase, intBitSize)
+	if err != nil {
+		return fmt.Errorf("strconv.ParseInt() %s", err.Error())
+	}
+	switch p := ptr.(type) {
+	case *int:
+		*p = (int(n))
+	case *int8:
+		*p = (int8(n))
+	case *int16:
+		*p = (int16(n))
+	case *int32:
+		*p = (int32(n))
+	case *int64:
+		*p = n
+	default:
+		return fmt.Errorf("invalid int pointer type")
+	}
+	return nil
+}
+
+func parseUint(s string, ptr interface{}) error {
+	n, err := strconv.ParseUint(s, intBase, intBitSize)
+	if err != nil {
+		return fmt.Errorf("strconv.ParseUint() %s", err.Error())
+	}
+	switch p := ptr.(type) {
+	case *uint:
+		*p = uint(n)
+	case *uint8:
+		*p = uint8(n)
+	case *uint16:
+		*p = uint16(n)
+	case *uint32:
+		*p = uint32(n)
+	case *uint64:
+		*p = n
+	default:
+		return fmt.Errorf("invalid uint pointer type")
+	}
+	return nil
+}
+
+
+
 
 /*
 // Store 属性の格納
