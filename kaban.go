@@ -12,6 +12,8 @@ import (
 )
 
 type (
+	chunk []byte
+
 	Kaban struct {
 		keyMap map[string]int
 		chunk  []byte
@@ -29,18 +31,15 @@ const (
 const (
 	sepDead   = 0xFF // Dead value
 	sepEOV    = 0xFE // End of value
-	sepNull   = 0xFD // JSON null
-	sepString = 0xFC // JSON string
-	sepBool   = 0xFB // JSON bool
-	sepInt    = 0xFA // JSON int
-	sepUint   = 0xF9 // JSON int
-	sepFloat  = 0xF8 // JSON float
-	sepTime   = 0xF7 // JSON time
-	sepArray  = 0xF6 // JSON array
-	//sepObject = 0xF5 // JSON object
-	// JSON object
-	//sepAny = sepNull + sepString + sepInt + sepFloat +
-	//	sepBool
+	sepNull   = 0xFD // null
+	sepString = 0xFC // string
+	sepBool   = 0xFB // bool
+	sepInt    = 0xFA // int
+	sepUint   = 0xF9 // uint
+	sepFloat  = 0xF8 // float
+	sepTime   = 0xF7 // time
+	sepArray  = 0xF6 // array
+	sepObject = 0xF5 // object
 )
 
 var (
@@ -63,12 +62,18 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 	}
 	// バイト列化
 	var blob []byte
+	if value == nil {
+		blob = stringToChunkBytes(sepNull, "")
+	}
 	switch v := value.(type) {
 	case string:
 		blob = stringToChunkBytes(sepString, v)
 	case bool:
-		s := strconv.FormatBool(v)
-		blob = stringToChunkBytes(sepBool, s)
+		if v {
+			blob = stringToChunkBytes(sepBool, "t")
+		} else {
+			blob = stringToChunkBytes(sepBool, "f")
+		}
 	case int, int8, int16, int32, int64:
 		blob = intToBytes(value)
 	case uint, uint8, uint16, uint32, uint64:
@@ -125,19 +130,15 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 	blob := k.valueBytesAt(index)
 	switch blob[0] {
 	case sepString:
+		str := string(bytes.Runes(blob[1:]))
 		p, ok := ptr.(*string)
 		if !ok {
 			return fmt.Errorf("cast() *string error")
 		}
-		//xdump(blob)
-		//fmt.Println("STRING")
-		*p = string(bytes.Runes(blob[1:]))
+		*p = str
 	case sepBool:
-		str := string(blob[1:])
-		b, err := strconv.ParseBool(str)
-		if err != nil {
-			return fmt.Errorf("strconv.ParseBool() %s", err.Error())
-		}
+		str := string(blob[1])
+		b := (str == "t")
 		p, ok := ptr.(*bool)
 		if !ok {
 			return fmt.Errorf("cast() *bool error")
@@ -161,7 +162,7 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		case *int64:
 			*p = num
 		default:
-			return fmt.Errorf("invalid pointer type")
+			return fmt.Errorf("invalid int pointer type")
 		}
 	case sepUint:
 		str := string(blob[1:])
@@ -181,7 +182,7 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		case *uint64:
 			*p = num
 		default:
-			return fmt.Errorf("invalid pointer type")
+			return fmt.Errorf("invalid uint pointer type")
 		}
 	case sepTime:
 		t, err := time.Parse(time.RFC3339Nano, string(blob[1:]))
@@ -261,11 +262,6 @@ func uintToBytes(value interface{}) []byte {
 	}
 	return stringToChunkBytes(sepUint, s)
 }
-
-// NewDictionary 辞書の新規作成
-//func NewDictionary() *Dictionary {
-//	return &Dictionary{}
-//}
 
 /*
 // Store 属性の格納
