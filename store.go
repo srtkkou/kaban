@@ -3,17 +3,7 @@ package kaban
 import (
 	"fmt"
 	"strconv"
-	"sync"
 	"time"
-)
-
-var (
-	// Pool for data less than 8 bytes.
-	smallBlobPool = sync.Pool{
-		New: func() interface{} {
-			return make([]byte, 0, 8)
-		},
-	}
 )
 
 func (k *Kaban) Store(key string, value interface{}) (err error) {
@@ -23,32 +13,31 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 	}
 	// バイト列化
 	var blob []byte
-	if value == nil {
-		blob = stringToChunkBytes(sepNull, "")
-	} else if strs, ok := value.([]string); ok {
-		blob = stringsToBytes(strs)
-	} else if nums, ok := value.([]int); ok {
-		blob = intsToBytes(nums)
-	}
 	switch v := value.(type) {
 	case string:
-		blob = stringToChunkBytes(sepString, v)
+		blob = stringToBlockBytes(sepString, v)
+		k.storeToBlock(key, blob)
 	case time.Time:
 		s := v.Format(time.RFC3339Nano)
-		blob = stringToChunkBytes(sepTime, s)
+		blob = stringToBlockBytes(sepTime, s)
+		k.storeToBlock(key, blob)
 	case bool:
-		if v {
-			blob = stringToChunkBytes(sepBool, "t")
-		} else {
-			blob = stringToChunkBytes(sepBool, "f")
-		}
+		return k.storeBool(key, v)
 	case int, int8, int16, int32, int64:
-		blob = intToBytes(value)
+		return k.storeInt(key, value)
 	case uint, uint8, uint16, uint32, uint64:
-		blob = uintToBytes(value)
+		return k.storeUint(key, value)
 	}
-	// 値の格納
-	k.storeToBlock(key, blob)
+	if value == nil {
+		blob = stringToBlockBytes(sepNull, "")
+		k.storeToBlock(key, blob)
+	} else if strs, ok := value.([]string); ok {
+		blob = stringsToBytes(strs)
+		k.storeToBlock(key, blob)
+	} else if nums, ok := value.([]int); ok {
+		blob = intsToBytes(nums)
+		k.storeToBlock(key, blob)
+	}
 	return nil
 }
 
@@ -65,7 +54,7 @@ func (k *Kaban) storeToBlock(key string, blob []byte) {
 	k.block = append(k.block, blob...)
 }
 
-func stringToChunkBytes(sep byte, s string) []byte {
+func stringToBlockBytes(sep byte, s string) []byte {
 	blob := make([]byte, 0, len(s)+2)
 	blob = append(blob, sep)
 	blob = append(blob, []byte(s)...)
@@ -73,7 +62,17 @@ func stringToChunkBytes(sep byte, s string) []byte {
 	return blob
 }
 
-func intToBytes(value interface{}) []byte {
+func (k *Kaban) storeBool(key string, value bool) error {
+	var s string = "f"
+	if value {
+		s = "t"
+	}
+	blob := stringToBlockBytes(sepBool, s)
+	k.storeToBlock(key, blob)
+	return nil
+}
+
+func (k *Kaban) storeInt(key string, value interface{}) error {
 	var s string
 	switch v := value.(type) {
 	case int:
@@ -87,10 +86,12 @@ func intToBytes(value interface{}) []byte {
 	case int64:
 		s = strconv.FormatInt(v, intBase)
 	}
-	return stringToChunkBytes(sepInt, s)
+	blob := stringToBlockBytes(sepInt, s)
+	k.storeToBlock(key, blob)
+	return nil
 }
 
-func uintToBytes(value interface{}) []byte {
+func (k *Kaban) storeUint(key string, value interface{}) error {
 	var s string
 	switch v := value.(type) {
 	case uint:
@@ -104,7 +105,9 @@ func uintToBytes(value interface{}) []byte {
 	case uint64:
 		s = strconv.FormatUint(v, intBase)
 	}
-	return stringToChunkBytes(sepUint, s)
+	blob := stringToBlockBytes(sepUint, s)
+	k.storeToBlock(key, blob)
+	return nil
 }
 
 func sliceToBytes(sep byte, strs []string) []byte {
