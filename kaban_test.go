@@ -180,6 +180,9 @@ func TestStoreLoadParallel(t *testing.T) {
 		t.Logf("key=%s, pos=%02X\n", key, pos)
 	}
 	xdump(k.block)
+	jBlob, err := k.MarshalJSON()
+	assert.Nil(t, err)
+	t.Log(string(jBlob))
 }
 
 // Marshal/Unmarshal
