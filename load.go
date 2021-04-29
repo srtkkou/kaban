@@ -51,14 +51,13 @@ func (k *Kaban) Load(key string, ptr interface{}) error {
 		*p = b
 	case sepInt:
 		str := string(blob[1:])
-		if err := parseInt(str, ptr); err != nil {
-			return err
-		}
+		return parseInt(str, ptr)
 	case sepUint:
 		str := string(blob[1:])
-		if err := parseUint(str, ptr); err != nil {
-			return err
-		}
+		return parseUint(str, ptr)
+	case sepFloat:
+		str := string(blob[1:])
+		return parseFloat(str, ptr)
 	case sepTime:
 		t, err := time.Parse(time.RFC3339Nano, string(blob[1:]))
 		if err != nil {
@@ -129,6 +128,26 @@ func parseUint(s string, ptr interface{}) error {
 		*p = n
 	default:
 		return fmt.Errorf("invalid uint pointer type")
+	}
+	return nil
+}
+
+func parseFloat(s string, ptr interface{}) error {
+	switch p := ptr.(type) {
+	case *float32:
+		f, err := strconv.ParseFloat(s, 32)
+		if err != nil {
+			return fmt.Errorf("strconv.ParseFloat() %s", err.Error())
+		}
+		*p = float32(f)
+	case *float64:
+		f, err := strconv.ParseFloat(s, 64)
+		if err != nil {
+			return fmt.Errorf("strconv.ParseFloat() %s", err.Error())
+		}
+		*p = f
+	default:
+		return fmt.Errorf("invalid float pointer type")
 	}
 	return nil
 }

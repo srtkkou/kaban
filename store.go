@@ -27,6 +27,8 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 		return k.storeInt(key, value)
 	case uint, uint8, uint16, uint32, uint64:
 		return k.storeUint(key, value)
+	case float32, float64:
+		return k.storeFloat(key, value)
 	}
 	if value == nil {
 		blob = stringToBlockBytes(sepNull, "")
@@ -106,6 +108,19 @@ func (k *Kaban) storeUint(key string, value interface{}) error {
 		s = strconv.FormatUint(v, intBase)
 	}
 	blob := stringToBlockBytes(sepUint, s)
+	k.storeToBlock(key, blob)
+	return nil
+}
+
+func (k *Kaban) storeFloat(key string, value interface{}) error {
+	var s string
+	switch v := value.(type) {
+	case float32:
+		s = strconv.FormatFloat(float64(v), 'e', -1, 32)
+	case float64:
+		s = strconv.FormatFloat(v, 'e', -1, 64)
+	}
+	blob := stringToBlockBytes(sepFloat, s)
 	k.storeToBlock(key, blob)
 	return nil
 }

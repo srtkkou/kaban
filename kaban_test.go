@@ -58,7 +58,7 @@ func TestStoreLoadParallel(t *testing.T) {
 		assert.Equal(t, boolFalse, v)
 	}()
 	// int
-	num := 987654321
+	num := -987654321
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
@@ -66,6 +66,26 @@ func TestStoreLoadParallel(t *testing.T) {
 		var v int
 		assert.Nil(t, k.Load("int", &v))
 		assert.Equal(t, num, v)
+	}()
+	// uint
+	unum := uint(123456789)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("uint", unum))
+		var v uint
+		assert.Nil(t, k.Load("uint", &v))
+		assert.Equal(t, unum, v)
+	}()
+	// float
+	fnum := float64(1.41421356)
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("float", fnum))
+		var v float64
+		assert.Nil(t, k.Load("float", &v))
+		assert.Equal(t, fnum, v)
 	}()
 	// Time
 	at := time.Now()
