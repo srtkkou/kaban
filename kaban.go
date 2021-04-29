@@ -55,7 +55,7 @@ func New() *Kaban {
 }
 
 func xdump(blob []byte) {
-	fmt.Print("    |00----02----04----06----08----0A----0C----0D---")
+	fmt.Print("    |00----02----04----06----08----0A----0C----0E---")
 	for i, v := range blob {
 		if i%16 == 0 {
 			fmt.Println()
