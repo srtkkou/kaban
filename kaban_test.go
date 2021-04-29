@@ -16,47 +16,78 @@ type (
 func TestStoreLoadParallel(t *testing.T) {
 	var wg sync.WaitGroup
 	k := New()
-	// string
-	ex1 := "abcABC123あいう漢字"
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.Nil(t, k.Store("attr1", ex1))
-		var v string
-		assert.Nil(t, k.Load("attr1", &v))
-		assert.Equal(t, ex1, v)
-	}()
-	// bool
-	ex2 := true
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.Nil(t, k.Store("attr2", ex2))
-		var v bool
-		assert.Nil(t, k.Load("attr2", &v))
-		assert.Equal(t, ex2, v)
-	}()
-	// int
-	ex3 := 987654321
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.Nil(t, k.Store("attr3", ex3))
-		var v int
-		assert.Nil(t, k.Load("attr3", &v))
-		assert.Equal(t, ex3, v)
-	}()
-	// []string
+	// nil
 	/*
-		ex2 := []string{"Abc", "あいう", "123", "漢字"}
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			assert.Nil(dict.Store("attr2", ex2))
-			var v []string
-			assert.Nil(dict.Load("attr2", &v))
-			assert.Equal(ex2, v)
+			assert.Nil(t, k.Store("nil", nil))
+			var v interface{}
+			assert.Nil(t, k.Load("nil", &v))
+			assert.Nil(t, v)
 		}()
+	*/
+	// string
+	str := "abcABC123あいう漢字"
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("string", str))
+		var v string
+		assert.Nil(t, k.Load("string", &v))
+		assert.Equal(t, str, v)
+	}()
+	// true
+	boolTrue := true
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("boolTrue", boolTrue))
+		var v bool
+		assert.Nil(t, k.Load("boolTrue", &v))
+		assert.Equal(t, boolTrue, v)
+	}()
+	// false
+	boolFalse := false
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("boolFalse", boolFalse))
+		var v bool
+		assert.Nil(t, k.Load("boolFalse", &v))
+		assert.Equal(t, boolFalse, v)
+	}()
+	// int
+	num := 987654321
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("int", num))
+		var v int
+		assert.Nil(t, k.Load("int", &v))
+		assert.Equal(t, num, v)
+	}()
+	// Time
+	at := time.Now()
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("time", at))
+		var v time.Time
+		assert.Nil(t, k.Load("time", &v))
+		assert.True(t, at.Equal(v))
+	}()
+	// []string
+	strs := []string{"Abc", "あいう", "123", "漢字"}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("[]string", strs))
+		var v []string
+		assert.Nil(t, k.Load("[]string", &v))
+		assert.Equal(t, strs, v)
+	}()
+	/*
 		// []int64
 		ex3 := []int64{8, 6, 4, 2, 0, -2}
 		wg.Add(1)
@@ -124,43 +155,38 @@ func TestStoreLoadParallel(t *testing.T) {
 			}
 		}()
 	*/
-	// Time
-	ex5 := time.Now()
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		assert.Nil(t, k.Store("attr5", ex5))
-		var v time.Time
-		assert.Nil(t, k.Load("attr5", &v))
-		assert.True(t, ex5.Equal(v))
-	}()
 	wg.Wait()
-	// Marshal/Unmarshal
-	/*
-		dict2 := NewDictionary()
-		jsonBlob, err := dict.MarshalJSON()
-		assert.Nil(err)
-		assert.Nil(dict2.UnmarshalJSON(jsonBlob))
-		// Keys
-		exKeys := []string{
-			"attr1", "attr2", "attr3", "attr4", "attr5",
-		}
-		assert.Equal(exKeys, dict2.Keys())
-		// 属性値
-		var at time.Time
-		assert.Nil(dict2.Load("attr5", &at))
-		assert.True(ex5.Equal(at))
-		var unums64 []uint64
-		assert.Nil(dict2.Load("attr4", &unums64))
-		assert.Equal(ex4, unums64)
-		var nums64 []int64
-		assert.Nil(dict2.Load("attr3", &nums64))
-		assert.Equal(ex3, nums64)
-		var strs []string
-		assert.Nil(dict2.Load("attr2", &strs))
-		assert.Equal(ex2, strs)
-		var str string
-		assert.Nil(dict2.Load("attr1", &str))
-		assert.Equal(ex1, str)
-	*/
+	for key, pos := range k.keyMap {
+		t.Logf("key=%s, pos=%02X\n", key, pos)
+	}
+	xdump(k.block)
 }
+
+// Marshal/Unmarshal
+/*
+	dict2 := NewDictionary()
+	jsonBlob, err := dict.MarshalJSON()
+	assert.Nil(err)
+	assert.Nil(dict2.UnmarshalJSON(jsonBlob))
+	// Keys
+	exKeys := []string{
+		"attr1", "attr2", "attr3", "attr4", "attr5",
+	}
+	assert.Equal(exKeys, dict2.Keys())
+	// 属性値
+	var at time.Time
+	assert.Nil(dict2.Load("attr5", &at))
+	assert.True(ex5.Equal(at))
+	var unums64 []uint64
+	assert.Nil(dict2.Load("attr4", &unums64))
+	assert.Equal(ex4, unums64)
+	var nums64 []int64
+	assert.Nil(dict2.Load("attr3", &nums64))
+	assert.Equal(ex3, nums64)
+	var strs []string
+	assert.Nil(dict2.Load("attr2", &strs))
+	assert.Equal(ex2, strs)
+	var str string
+	assert.Nil(dict2.Load("attr1", &str))
+	assert.Equal(ex1, str)
+*/
