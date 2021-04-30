@@ -34,11 +34,27 @@ func (k *Kaban) Store(key string, value interface{}) (err error) {
 		blob = stringToBlockBytes(sepNull, "")
 		k.storeToBlock(key, blob)
 	} else if strs, ok := value.([]string); ok {
-		blob = stringsToBytes(strs)
-		k.storeToBlock(key, blob)
+		return k.storeStrings(key, strs)
 	} else if nums, ok := value.([]int); ok {
-		blob = intsToBytes(nums)
-		k.storeToBlock(key, blob)
+		return k.storeInts(key, nums)
+	} else if nums, ok := value.([]int8); ok {
+		return k.storeInt8s(key, nums)
+	} else if nums, ok := value.([]int16); ok {
+		return k.storeInt16s(key, nums)
+	} else if nums, ok := value.([]int32); ok {
+		return k.storeInt32s(key, nums)
+	} else if nums, ok := value.([]int64); ok {
+		return k.storeInt64s(key, nums)
+	} else if unums, ok := value.([]uint); ok {
+		return k.storeUints(key, unums)
+	} else if unums, ok := value.([]uint8); ok {
+		return k.storeUint8s(key, unums)
+	} else if unums, ok := value.([]uint16); ok {
+		return k.storeUint16s(key, unums)
+	} else if unums, ok := value.([]uint32); ok {
+		return k.storeUint32s(key, unums)
+	} else if unums, ok := value.([]uint64); ok {
+		return k.storeUint64s(key, unums)
 	}
 	return nil
 }
@@ -125,7 +141,9 @@ func (k *Kaban) storeFloat(key string, value interface{}) error {
 	return nil
 }
 
-func sliceToBytes(sep byte, strs []string) []byte {
+func (k *Kaban) storeSlice(
+	key string, sep byte, strs []string,
+) error {
 	size := 2
 	for _, s := range strs {
 		size += len(s) + 1
@@ -137,41 +155,90 @@ func sliceToBytes(sep byte, strs []string) []byte {
 		blob = append(blob, []byte(s)...)
 	}
 	blob = append(blob, sepEOV)
-	return blob
+	k.storeToBlock(key, blob)
+	return nil
 }
 
-func stringsToBytes(strs []string) []byte {
-	return sliceToBytes(sepString, strs)
+func (k *Kaban) storeStrings(key string, strs []string) error {
+	return k.storeSlice(key, sepString, strs)
 }
 
-func intsToBytes(values interface{}) []byte {
-	var strs []string
-	switch nums := values.(type) {
-	case []int:
-		strs = make([]string, len(nums))
-		for i, num := range nums {
-			strs[i] = strconv.FormatInt(int64(num), intBase)
-		}
-	case []int8:
-		strs = make([]string, len(nums))
-		for i, num := range nums {
-			strs[i] = strconv.FormatInt(int64(num), intBase)
-		}
-	case []int16:
-		strs = make([]string, len(nums))
-		for i, num := range nums {
-			strs[i] = strconv.FormatInt(int64(num), intBase)
-		}
-	case []int32:
-		strs = make([]string, len(nums))
-		for i, num := range nums {
-			strs[i] = strconv.FormatInt(int64(num), intBase)
-		}
-	case []int64:
-		strs = make([]string, len(nums))
-		for i, num := range nums {
-			strs[i] = strconv.FormatInt(num, intBase)
-		}
+func (k *Kaban) storeInts(key string, nums []int) error {
+	strs := make([]string, len(nums))
+	for i, num := range nums {
+		strs[i] = strconv.FormatInt(int64(num), intBase)
 	}
-	return sliceToBytes(sepInt, strs)
+	return k.storeSlice(key, sepInt, strs)
+}
+
+func (k *Kaban) storeInt8s(key string, nums []int8) error {
+	strs := make([]string, len(nums))
+	for i, num := range nums {
+		strs[i] = strconv.FormatInt(int64(num), intBase)
+	}
+	return k.storeSlice(key, sepInt, strs)
+}
+
+func (k *Kaban) storeInt16s(key string, nums []int16) error {
+	strs := make([]string, len(nums))
+	for i, num := range nums {
+		strs[i] = strconv.FormatInt(int64(num), intBase)
+	}
+	return k.storeSlice(key, sepInt, strs)
+}
+
+func (k *Kaban) storeInt32s(key string, nums []int32) error {
+	strs := make([]string, len(nums))
+	for i, num := range nums {
+		strs[i] = strconv.FormatInt(int64(num), intBase)
+	}
+	return k.storeSlice(key, sepInt, strs)
+}
+
+func (k *Kaban) storeInt64s(key string, nums []int64) error {
+	strs := make([]string, len(nums))
+	for i, num := range nums {
+		strs[i] = strconv.FormatInt(num, intBase)
+	}
+	return k.storeSlice(key, sepInt, strs)
+}
+
+func (k *Kaban) storeUints(key string, unums []uint) error {
+	strs := make([]string, len(unums))
+	for i, unum := range unums {
+		strs[i] = strconv.FormatUint(uint64(unum), intBase)
+	}
+	return k.storeSlice(key, sepUint, strs)
+}
+
+func (k *Kaban) storeUint8s(key string, unums []uint8) error {
+	strs := make([]string, len(unums))
+	for i, unum := range unums {
+		strs[i] = strconv.FormatUint(uint64(unum), intBase)
+	}
+	return k.storeSlice(key, sepUint, strs)
+}
+
+func (k *Kaban) storeUint16s(key string, unums []uint16) error {
+	strs := make([]string, len(unums))
+	for i, unum := range unums {
+		strs[i] = strconv.FormatUint(uint64(unum), intBase)
+	}
+	return k.storeSlice(key, sepUint, strs)
+}
+
+func (k *Kaban) storeUint32s(key string, unums []uint32) error {
+	strs := make([]string, len(unums))
+	for i, unum := range unums {
+		strs[i] = strconv.FormatUint(uint64(unum), intBase)
+	}
+	return k.storeSlice(key, sepUint, strs)
+}
+
+func (k *Kaban) storeUint64s(key string, unums []uint64) error {
+	strs := make([]string, len(unums))
+	for i, unum := range unums {
+		strs[i] = strconv.FormatUint(unum, intBase)
+	}
+	return k.storeSlice(key, sepUint, strs)
 }
