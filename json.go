@@ -2,6 +2,7 @@ package kaban
 
 import (
 	"strconv"
+	"strings"
 )
 
 // Convert to JSON bytes.
@@ -37,6 +38,19 @@ func (k *Kaban) MarshalJSON() ([]byte, error) {
 			s := strconv.FormatUint(num, 10)
 			jBlob = append(jBlob, []byte(s)...)
 			jBlob = append(jBlob, ',')
+		case sepSlice:
+			switch k.block[index+1] {
+			case sepString:
+				strs, err := k.LoadStrings(key)
+				if err != nil {
+					return []byte{}, err
+				}
+				jBlob = append(jBlob, '[', '"')
+				jBlob = append(jBlob, []byte(strings.Join(strs, `","`))...)
+				jBlob = append(jBlob, '"', ']', ',')
+				//case sepInt:
+				//case sepUint:
+			}
 		}
 	}
 	// Replace last comma with brace.
