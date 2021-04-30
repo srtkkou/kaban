@@ -107,79 +107,81 @@ func TestStoreLoadParallel(t *testing.T) {
 		assert.Nil(t, k.Load("[]string", &v))
 		assert.Equal(t, strs, v)
 	}()
-	/*
-		// []int64
-		ex3 := []int64{8, 6, 4, 2, 0, -2}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			assert.Nil(dict.Store("attr3", ex3))
-			var nums64 []int64
-			assert.Nil(dict.Load("attr3", &nums64))
-			assert.Equal(ex3, nums64)
-			var nums []int
-			assert.Nil(dict.Load("attr3", &nums))
-			for i, n := range nums {
-				assert.Equal(ex3[i], int64(n))
-			}
-			var nums32 []int32
-			assert.Nil(dict.Load("attr3", &nums32))
-			for i, n := range nums32 {
-				assert.Equal(ex3[i], int64(n))
-			}
-			var nums16 []int16
-			assert.Nil(dict.Load("attr3", &nums16))
-			for i, n := range nums16 {
-				assert.Equal(ex3[i], int64(n))
-			}
-			var nums8 []int8
-			assert.Nil(dict.Load("attr3", &nums8))
-			for i, n := range nums8 {
-				assert.Equal(ex3[i], int64(n))
-			}
+	// []int64
+	exNums := []int64{8, 6, 4, 2, 0, -2}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("[]int", exNums))
+		var num64s []int64
+		assert.Nil(t, k.Load("[]int", &num64s))
+		assert.Equal(t, exNums, num64s)
+		var nums []int
+		assert.Nil(t, k.Load("[]int", &nums))
+		for i, n := range nums {
+			assert.Equal(t, exNums[i], int64(n))
+		}
+		var num32s []int32
+		assert.Nil(t, k.Load("[]int", &num32s))
+		for i, n := range num32s {
+			assert.Equal(t, exNums[i], int64(n))
+		}
+		var num16s []int16
+		assert.Nil(t, k.Load("[]int", &num16s))
+		for i, n := range num16s {
+			assert.Equal(t, exNums[i], int64(n))
+		}
+		var num8s []int8
+		assert.Nil(t, k.Load("[]int", &num8s))
+		for i, n := range num8s {
+			assert.Equal(t, exNums[i], int64(n))
+		}
+		/*
 			var cnums []customInt
-			assert.Nil(dict.Load("attr3", &cnums))
+			assert.Nil(t, k.Load("[]int", &cnums))
 			for i, n := range cnums {
-				assert.Equal(ex3[i], int64(n))
+				assert.Equal(t, exNums[i], int64(n))
 			}
-		}()
-		// []uint64
-		ex4 := []uint64{8, 6, 4, 2, 0}
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			assert.Nil(dict.Store("attr4", ex4))
-			var unums64 []uint64
-			assert.Nil(dict.Load("attr4", &unums64))
-			assert.Equal(ex4, unums64)
-			var unums []uint
-			assert.Nil(dict.Load("attr4", &unums))
-			for i, n := range unums {
-				assert.Equal(ex4[i], uint64(n))
-			}
-			var unums32 []uint32
-			assert.Nil(dict.Load("attr4", &unums32))
-			for i, n := range unums32 {
-				assert.Equal(ex4[i], uint64(n))
-			}
-			var unums16 []uint16
-			assert.Nil(dict.Load("attr4", &unums16))
-			for i, n := range unums16 {
-				assert.Equal(ex4[i], uint64(n))
-			}
+		*/
+	}()
+	// []uint64
+	exUnums := []uint64{8, 6, 4, 2, 0}
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		assert.Nil(t, k.Store("[]unum", exUnums))
+		var unum64s []uint64
+		assert.Nil(t, k.Load("[]unum", &unum64s))
+		assert.Equal(t, exUnums, unum64s)
+		var unums []uint
+		assert.Nil(t, k.Load("[]unum", &unums))
+		for i, n := range unums {
+			assert.Equal(t, exUnums[i], uint64(n))
+		}
+		var unum32s []uint32
+		assert.Nil(t, k.Load("[]unum", &unum32s))
+		for i, n := range unum32s {
+			assert.Equal(t, exUnums[i], uint64(n))
+		}
+		var unum16s []uint16
+		assert.Nil(t, k.Load("[]unum", &unum16s))
+		for i, n := range unum16s {
+			assert.Equal(t, exUnums[i], uint64(n))
+		}
+		/*
 			// goの仕様上[]uint8([]byte)には変換できない。
 			var cunums []customUint
-			assert.Nil(dict.Load("attr4", &cunums))
+			assert.Nil(t, k.Load("[]unum", &cunums))
 			for i, n := range cunums {
-				assert.Equal(ex4[i], uint64(n))
+				assert.Equal(t, exUnums[i], uint64(n))
 			}
-		}()
-	*/
+		*/
+	}()
 	wg.Wait()
 	for key, pos := range k.keyMap {
 		t.Logf("key=%s, pos=%02X\n", key, pos)
 	}
-	xdump(k.block)
+	t.Log("\n" + xdump(k.block))
 	jBlob, err := k.MarshalJSON()
 	assert.Nil(t, err)
 	t.Log(string(jBlob))
