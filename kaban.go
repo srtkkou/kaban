@@ -1,7 +1,6 @@
 package kaban
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -52,18 +51,4 @@ func New() *Kaban {
 	}
 	k.block = make([]byte, 0, blockSize)
 	return k
-}
-
-func xdump(blob []byte) {
-	fmt.Print("    |00----02----04----06----08----0A----0C----0E---")
-	for i, v := range blob {
-		if i%16 == 0 {
-			fmt.Println()
-			fmt.Printf("%04X|", (i / 16))
-		}
-		fmt.Printf("%02X ", v)
-	}
-	if len(blob)%16 != 0 {
-		fmt.Println()
-	}
 }
