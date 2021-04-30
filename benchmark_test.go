@@ -16,17 +16,6 @@ func BenchmarkSyncMapStoreAndLoadInt(b *testing.B) {
 	}
 }
 
-func BenchmarkDictionaryStoreAndLoadInt(b *testing.B) {
-	var v int
-	d := NewDictionary()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		key := strconv.Itoa(i)
-		d.Store(key, i)
-		d.Load(key, &v)
-	}
-}
-
 func BenchmarkKabanStoreAndLoadInt(b *testing.B) {
 	var v int
 	k := New()
@@ -35,5 +24,34 @@ func BenchmarkKabanStoreAndLoadInt(b *testing.B) {
 		key := strconv.Itoa(i)
 		k.Store(key, i)
 		k.Load(key, &v)
+	}
+}
+
+func BenchmarkSyncMapStoreAndLoadString(b *testing.B) {
+	months := []string{"January", "February", "March", "April",
+		"May", "June", "July", "August", "September", "October",
+		"November", "December"}
+	m := new(sync.Map)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		value := months[i%12]
+		m.Store(key, value)
+		_, _ = m.Load(key)
+	}
+}
+
+func BenchmarkKabanStoreAndLoadString(b *testing.B) {
+	months := []string{"January", "February", "March", "April",
+		"May", "June", "July", "August", "September", "October",
+		"November", "December"}
+	k := New()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		value := months[i%12]
+		k.Store(key, value)
+		var s string
+		_ = k.Load(key, &s)
 	}
 }
