@@ -4,6 +4,9 @@ set -u
 version=`git log -n 1 --date=short --pretty=format:"%cd-%h"`
 echo "* ver: $version"
 
+echo "* go mod tidy"
+go mod tidy
+
 echo "* go generate"
 go generate ./...
 
