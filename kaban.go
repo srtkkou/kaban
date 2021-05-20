@@ -1,54 +1,109 @@
 package kaban
 
 import (
+	"math/bits"
 	"sync"
 )
 
 type (
-	// Byte slice.
-	block []byte
-	// Goroutine safe key value store.
-	Kaban struct {
-		keyMap map[string]int
-		block  block
+	// Goroutine safe JSON object.
+	Object struct {
+		id     int
+		mtx    sync.RWMutex
+		keyMap map[string]value
+		keys   []string
+		block  []byte
 	}
+	// Goroutine safe JSON array.
+	Array struct {
+		id       int
+		mtx      sync.RWMutex
+		indexMap map[int]value
+		indexes  []int
+		block    []byte
+	}
+	// JSON value.
+	value struct {
+		kType kabanType
+		index int
+		size  int
+	}
+	// Type
+	kabanType int
 )
 
 const (
-	// Initial byte size of a block..
-	blockSize = 1024 * 1024
-	// Initial total number of blocks.
-	//totalBlocks = 1
+	kNull kabanType = iota + 1
+	kString
+	kTime
+	kBool
+	kInt
+	kInt8
+	kInt16
+	kInt32
+	kInt64
+	kUint
+	kUint8
+	kUint16
+	kUint32
+	kUint64
+	kFloat32
+	kFloat64
+)
 
-	intBase    = 36
+const (
+	// Initial byte size of a block.
+	blockSize = 10 * 1024
+	// Initial size of keys.
+	keySize = 256
+	// Initial size of indexes.
+	indexSize = 64
+
+	// Base number of parse/format int/uint.
+	intBase = 36
+	// Bit size of parse/format int/uint.
 	intBitSize = 64
 )
 
-const (
-	sepDead   = byte(0xFF) // Dead value
-	sepEOV    = byte(0xFE) // End of value
-	sepNull   = byte(0xFD) // null
-	sepString = byte(0xFC) // string
-	sepBool   = byte(0xFB) // bool
-	sepInt    = byte(0xFA) // int
-	sepUint   = byte(0xF9) // uint
-	sepFloat  = byte(0xF8) // float
-	sepTime   = byte(0xF7) // time
-	sepSlice  = byte(0xF6) // slice
-	sepObject = byte(0xF5) // object
+var (
+	// Int size of the system(32 or 64)
+	systemIntSize = bits.UintSize
 )
 
 var (
-	// Mutex for block read/write.
-	kabanMtx = new(sync.RWMutex)
+	// Newest object ID.
+	newestObjectID = 0
+	// Newest array ID.
+	newestArrayID = 0
 )
 
-// Create new kaban store.
-func New() *Kaban {
-	k := &Kaban{
-		keyMap: make(map[string]int),
-		//blocks: make([]block, totalBlocks),
+// Panic on error.
+func Must(err error) {
+	if err != nil {
+		panic(err)
 	}
-	k.block = make([]byte, 0, blockSize)
-	return k
+}
+
+// Create object.
+func New() *Object {
+	o := &Object{
+		id:     newestObjectID,
+		keyMap: make(map[string]value),
+		keys:   make([]string, 0, keySize),
+		block:  make([]byte, 0, blockSize),
+	}
+	newestObjectID++
+	return o
+}
+
+// Create array.
+func newArray() *Array {
+	a := &Array{
+		id:       newestArrayID,
+		indexMap: make(map[int]value),
+		indexes:  make([]int, 0, indexSize),
+		block:    make([]byte, 0, blockSize),
+	}
+	newestArrayID++
+	return a
 }
