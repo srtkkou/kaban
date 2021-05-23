@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+
+	"github.com/cornelk/hashmap"
 )
 
 func BenchmarkSyncMapStoreAndLoadInt(b *testing.B) {
@@ -24,6 +26,16 @@ func BenchmarkKabanStoreAndLoadInt(b *testing.B) {
 		key := strconv.Itoa(i)
 		k.Store(key, i)
 		k.Load(key, &v)
+	}
+}
+
+func BenchmarkHashMapStoreAndLoadInt(b *testing.B) {
+	m := &hashmap.HashMap{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		m.Set(key, i)
+		_, _ = m.Get(key)
 	}
 }
 
@@ -53,5 +65,19 @@ func BenchmarkKabanStoreAndLoadString(b *testing.B) {
 		k.Store(key, value)
 		var s string
 		_ = k.Load(key, &s)
+	}
+}
+
+func BenchmarkHashMapStoreAndLoadString(b *testing.B) {
+	months := []string{"January", "February", "March", "April",
+		"May", "June", "July", "August", "September", "October",
+		"November", "December"}
+	m := &hashmap.HashMap{}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		key := strconv.Itoa(i)
+		value := months[i%12]
+		m.Set(key, value)
+		_, _ = m.Get(key)
 	}
 }
