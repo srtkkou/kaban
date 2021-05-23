@@ -1,5 +1,6 @@
 package kaban
 
+/*
 import (
 	"strconv"
 	"strings"
@@ -58,3 +59,4 @@ func (k *Kaban) MarshalJSON() ([]byte, error) {
 	jBlob[lastIndex] = '}'
 	return jBlob, nil
 }
+*/
